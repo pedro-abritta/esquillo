@@ -1,4 +1,4 @@
-import { Expense, CreditCard, Invoice, Document, User } from "./types";
+import { Expense, CreditCard, Invoice, Document, User, FixedIncomeInvestment, StockInvestment } from "./types";
 
 export const mockUser: User = {
   id: "1",
@@ -174,5 +174,59 @@ export const mockDocuments: Document[] = [
     uploadedAt: "2026-04-22",
     size: 1024 * 640,
     status: "PENDING",
+  },
+];
+
+export const mockFixedIncomeInvestments: FixedIncomeInvestment[] = [
+  {
+    id: "inv-fixed-1",
+    name: "CDB Banco Inter",
+    type: "CDB",
+    balance: 25000.00,
+    contractedRate: 11.0,
+    maturityDate: "2027-04-29",
+    updatedAt: "2026-04-28",
+  },
+  {
+    id: "inv-fixed-2",
+    name: "Tesouro Selic 2027",
+    type: "TESOURO",
+    balance: 15000.00,
+    contractedRate: 10.5,
+    maturityDate: "2027-12-31",
+    updatedAt: "2026-04-27",
+  },
+  {
+    id: "inv-fixed-3",
+    name: "LCI Itaú",
+    type: "LCI",
+    balance: 10000.00,
+    contractedRate: 10.0,
+    maturityDate: "2028-04-29",
+    updatedAt: "2026-03-15",
+  },
+];
+
+export const mockStockInvestments: StockInvestment[] = [
+  {
+    id: "inv-stock-1",
+    ticker: "VALE3",
+    quantity: 100,
+    totalValue: 4850.00,
+    updatedAt: "2026-04-29",
+  },
+  {
+    id: "inv-stock-2",
+    ticker: "PETR4",
+    quantity: 150,
+    totalValue: 7650.00,
+    updatedAt: "2026-04-28",
+  },
+  {
+    id: "inv-stock-3",
+    ticker: "ITUB4",
+    quantity: 50,
+    totalValue: 3200.00,
+    updatedAt: "2026-04-25",
   },
 ];

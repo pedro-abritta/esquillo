@@ -28,3 +28,18 @@ export function formatShortDate(date: Date | string): string {
   const dateObj = typeof date === "string" ? parseISO(date) : date
   return format(dateObj, "dd/MM/yyyy", { locale: ptBR })
 }
+
+export function calculateFixedIncomeProjection(
+  balance: number,
+  rate: number,
+  periods: ("eoy" | "1y" | "2y")[]
+): Record<string, number> {
+  const results: Record<string, number> = {}
+
+  periods.forEach((period) => {
+    const years = period === "eoy" ? 0.6667 : period === "1y" ? 1 : 2
+    results[period] = balance * Math.pow(1 + rate / 100, years)
+  })
+
+  return results
+}

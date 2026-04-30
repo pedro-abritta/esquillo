@@ -56,3 +56,23 @@ export interface User {
   name: string;
   cpf: string;
 }
+
+export type FixedIncomeType = "CDB" | "TESOURO" | "LCI" | "LCA" | "CAIXINHA";
+
+export interface FixedIncomeInvestment {
+  id: string;
+  name: string;
+  type: FixedIncomeType;
+  balance: number;
+  contractedRate: number;
+  maturityDate: string;
+  updatedAt: string;
+}
+
+export interface StockInvestment {
+  id: string;
+  ticker: string;
+  quantity: number;
+  totalValue: number;
+  updatedAt: string;
+}

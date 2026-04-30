@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, TrendingDown, CreditCard, FileText } from "lucide-react";
+import { Home, TrendingDown, CreditCard, TrendingUp, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/despesas", label: "Despesas", icon: TrendingDown },
   { href: "/cartoes", label: "Cartões", icon: CreditCard },
+  { href: "/investimentos", label: "Investimentos", icon: TrendingUp },
   { href: "/ir", label: "IR", icon: FileText },
 ];
 
