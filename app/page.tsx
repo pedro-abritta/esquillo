@@ -1,101 +1,188 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { Header } from "@/components/shared/Header";
+import { MonthSelector } from "@/components/shared/MonthSelector";
+import { ExpenseItem } from "@/components/feature/ExpenseItem";
+import { CardItem } from "@/components/feature/CardItem";
+import { Mascot } from "@/components/shared/Mascot";
+import { mockExpenses, mockCreditCards } from "@/lib/mock-data";
+import { formatCurrency } from "@/lib/utils";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { useState, useMemo } from "react";
+
+const chartData = [
+  { name: "Sem 1", valor: 850 },
+  { name: "Sem 2", valor: 1200 },
+  { name: "Sem 3", valor: 950 },
+  { name: "Sem 4", valor: 1400 },
+];
+
+export default function Dashboard() {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const thisMonthExpenses = useMemo(() => {
+    return mockExpenses.filter((exp) => {
+      const expDate = new Date(exp.date);
+      return (
+        expDate.getMonth() === currentMonth.getMonth() &&
+        expDate.getFullYear() === currentMonth.getFullYear()
+      );
+    });
+  }, [currentMonth]);
+
+  const totalExpenses = thisMonthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const totalCardUsage = mockCreditCards.reduce((sum, card) => sum + card.used, 0);
+  const totalCardLimit = mockCreditCards.reduce((sum, card) => sum + card.limit, 0);
+
+  const activeCards = mockCreditCards.filter((card) => card.status === "ACTIVE").length;
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="flex flex-col h-full">
+      <Header title="Dashboard" />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-8 space-y-8">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-4 gap-4">
+            <div className="p-4 bg-white border-thin border border-gray-200 rounded-lg">
+              <p className="text-xs text-gray-600 mb-2">Saldo do mês</p>
+              <div className="flex items-baseline gap-2">
+                <h3 className="text-2xl font-600 text-gray-900">
+                  {formatCurrency(5000 - totalExpenses)}
+                </h3>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white border-thin border border-gray-200 rounded-lg">
+              <p className="text-xs text-gray-600 mb-2">Despesas</p>
+              <div className="flex items-baseline gap-2">
+                <h3 className="text-2xl font-600 text-gray-900">
+                  {formatCurrency(totalExpenses)}
+                </h3>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white border-thin border border-gray-200 rounded-lg">
+              <p className="text-xs text-gray-600 mb-2">Cartões ativos</p>
+              <h3 className="text-2xl font-600 text-gray-900">{activeCards}</h3>
+            </div>
+
+            <div className="p-4 bg-white border-thin border border-gray-200 rounded-lg">
+              <p className="text-xs text-gray-600 mb-2">Limite utilizado</p>
+              <div className="flex items-baseline gap-2">
+                <h3 className="text-2xl font-600 text-gray-900">
+                  {((totalCardUsage / totalCardLimit) * 100).toFixed(0)}%
+                </h3>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts Section */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-6 bg-white border-thin border border-gray-200 rounded-lg">
+              <h2 className="text-sm font-600 text-gray-900 mb-4">
+                Despesas da semana
+              </h2>
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={chartData}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#e5e7eb"
+                    vertical={false}
+                  />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="valor"
+                    stroke="#BA7517"
+                    strokeWidth={2}
+                    dot={{ fill: "#BA7517", r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="p-6 bg-white border-thin border border-gray-200 rounded-lg">
+              <h2 className="text-sm font-600 text-gray-900 mb-4">Cartões</h2>
+              <div className="space-y-3">
+                {mockCreditCards.slice(0, 2).map((card) => (
+                  <div
+                    key={card.id}
+                    className="flex justify-between items-center p-3 bg-gray-50 rounded-md"
+                  >
+                    <span className="text-sm text-gray-900">{card.name}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary"
+                          style={{
+                            width: `${(card.used / card.limit) * 100}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs font-500 text-gray-600 w-10 text-right">
+                        {((card.used / card.limit) * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Expenses */}
+          <div className="p-6 bg-white border-thin border border-gray-200 rounded-lg">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-sm font-600 text-gray-900">
+                  Últimas despesas
+                </h2>
+                <MonthSelector onChange={setCurrentMonth} />
+              </div>
+              <button className="text-xs font-500 text-primary hover:text-primary/80 transition-colors">
+                Ver todas
+              </button>
+            </div>
+
+            {thisMonthExpenses.length > 0 ? (
+              <div className="space-y-0">
+                {thisMonthExpenses.slice(0, 5).map((expense) => (
+                  <ExpenseItem key={expense.id} expense={expense} />
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 text-center space-y-4">
+                <Mascot size="md" />
+                <p className="text-sm text-gray-500">
+                  Nenhuma despesa registrada neste mês
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Cards Grid */}
+          <div className="p-6 bg-white border-thin border border-gray-200 rounded-lg">
+            <h2 className="text-sm font-600 text-gray-900 mb-4">
+              Seus cartões
+            </h2>
+            <div className="grid grid-cols-3 gap-4">
+              {mockCreditCards.map((card) => (
+                <CardItem key={card.id} card={card} />
+              ))}
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
     </div>
   );
 }

@@ -1,3 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  .border-thin {
+    @apply border-[0.5px];
+  }
+
+  .text-status {
+    @apply flex items-center gap-2 text-sm;
+  }
+
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .chip {
+    @apply px-3 py-1 rounded-full text-xs font-500 bg-primary-light text-primary;
+  }
+
+  .card-border {
+    @apply border border-thin border-gray-200;
+  }
+}
