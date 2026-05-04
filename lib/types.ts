@@ -9,6 +9,17 @@ export type IRCategory =
 export type DocumentStatus = "PENDING" | "ORGANIZED" | "USED";
 export type CardStatus = "ACTIVE" | "INACTIVE" | "BLOCKED";
 export type InvoiceStatus = "OPEN" | "CLOSED" | "PAID";
+export type FixedIncomeType = "CDB" | "TESOURO" | "LCI" | "LCA" | "CAIXINHA";
+export type PaymentMethod = "PIX" | "DEBITO" | "CREDITO" | "BOLETO";
+
+export interface Category {
+  id: string;
+  key: string;
+  label: string;
+  color: string;
+  icon: string;
+  irCategory?: string;
+}
 
 export interface Expense {
   id: string;
@@ -16,7 +27,13 @@ export interface Expense {
   category: ExpenseCategory;
   amount: number;
   date: string;
+  paymentMethod: PaymentMethod;
+  isDeductible: boolean;
   cardId?: string;
+  isInstallment: boolean;
+  installmentNumber?: number;
+  totalInstallments?: number;
+  installmentGroupId?: string;
 }
 
 export interface CreditCard {
@@ -26,6 +43,7 @@ export interface CreditCard {
   limit: number;
   used: number;
   status: CardStatus;
+  closingDay: number;
   dueDay: number;
 }
 
@@ -38,7 +56,6 @@ export interface Invoice {
   total: number;
   status: InvoiceStatus;
   dueDate: string;
-  installments?: number;
 }
 
 export interface Document {
@@ -48,6 +65,7 @@ export interface Document {
   uploadedAt: string;
   size: number;
   status: DocumentStatus;
+  storagePath?: string;
 }
 
 export interface User {
@@ -57,8 +75,6 @@ export interface User {
   cpf: string;
 }
 
-export type FixedIncomeType = "CDB" | "TESOURO" | "LCI" | "LCA" | "CAIXINHA";
-
 export interface FixedIncomeInvestment {
   id: string;
   name: string;
@@ -66,7 +82,7 @@ export interface FixedIncomeInvestment {
   balance: number;
   contractedRate: number;
   maturityDate: string;
-  updatedAt: string;
+  balanceUpdatedAt: string;
 }
 
 export interface StockInvestment {
@@ -74,5 +90,21 @@ export interface StockInvestment {
   ticker: string;
   quantity: number;
   totalValue: number;
-  updatedAt: string;
+  balanceUpdatedAt: string;
+}
+
+export interface RecurringTemplate {
+  id: string;
+  description: string;
+  category: ExpenseCategory;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  cardId?: string;
+  isDeductible: boolean;
+  dayOfMonth: number;
+  active: boolean;
+}
+
+export interface DbError {
+  message: string;
 }

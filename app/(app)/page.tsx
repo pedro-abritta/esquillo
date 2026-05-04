@@ -5,7 +5,6 @@ import { MonthSelector } from "@/components/shared/MonthSelector";
 import { ExpenseItem } from "@/components/feature/ExpenseItem";
 import { CardItem } from "@/components/feature/CardItem";
 import { Mascot } from "@/components/shared/Mascot";
-import { mockExpenses, mockCreditCards } from "@/lib/mock-data";
 import { formatCurrency } from "@/lib/utils";
 import {
   LineChart,
@@ -16,7 +15,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
+import { getExpenses } from "@/lib/db/expenses";
+import { getCreditCards } from "@/lib/db/credit-cards";
+import type { Expense, CreditCard } from "@/lib/types";
 
 const chartData = [
   { name: "Sem 1", valor: 850 },
@@ -27,22 +29,25 @@ const chartData = [
 
 export default function Dashboard() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [cards, setCards] = useState<CreditCard[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const thisMonthExpenses = useMemo(() => {
-    return mockExpenses.filter((exp) => {
-      const expDate = new Date(exp.date);
-      return (
-        expDate.getMonth() === currentMonth.getMonth() &&
-        expDate.getFullYear() === currentMonth.getFullYear()
-      );
-    });
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      getExpenses(currentMonth.getFullYear(), currentMonth.getMonth()),
+      getCreditCards(),
+    ])
+      .then(([e, c]) => { setExpenses(e); setCards(c); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [currentMonth]);
 
-  const totalExpenses = thisMonthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const totalCardUsage = mockCreditCards.reduce((sum, card) => sum + card.used, 0);
-  const totalCardLimit = mockCreditCards.reduce((sum, card) => sum + card.limit, 0);
-
-  const activeCards = mockCreditCards.filter((card) => card.status === "ACTIVE").length;
+  const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const totalCardUsage = cards.reduce((sum, card) => sum + card.used, 0);
+  const totalCardLimit = cards.reduce((sum, card) => sum + card.limit, 0);
+  const activeCards = cards.filter((card) => card.status === "ACTIVE").length;
 
   return (
     <div className="flex flex-col h-full">
@@ -54,20 +59,16 @@ export default function Dashboard() {
           <div className="grid grid-cols-4 gap-4">
             <div className="p-4 bg-white border-thin border border-gray-200 rounded-lg">
               <p className="text-xs text-gray-600 mb-2">Saldo do mês</p>
-              <div className="flex items-baseline gap-2">
-                <h3 className="text-2xl font-600 text-gray-900">
-                  {formatCurrency(5000 - totalExpenses)}
-                </h3>
-              </div>
+              <h3 className="text-2xl font-600 text-gray-900">
+                {formatCurrency(5000 - totalExpenses)}
+              </h3>
             </div>
 
             <div className="p-4 bg-white border-thin border border-gray-200 rounded-lg">
               <p className="text-xs text-gray-600 mb-2">Despesas</p>
-              <div className="flex items-baseline gap-2">
-                <h3 className="text-2xl font-600 text-gray-900">
-                  {formatCurrency(totalExpenses)}
-                </h3>
-              </div>
+              <h3 className="text-2xl font-600 text-gray-900">
+                {formatCurrency(totalExpenses)}
+              </h3>
             </div>
 
             <div className="p-4 bg-white border-thin border border-gray-200 rounded-lg">
@@ -77,11 +78,11 @@ export default function Dashboard() {
 
             <div className="p-4 bg-white border-thin border border-gray-200 rounded-lg">
               <p className="text-xs text-gray-600 mb-2">Limite utilizado</p>
-              <div className="flex items-baseline gap-2">
-                <h3 className="text-2xl font-600 text-gray-900">
-                  {((totalCardUsage / totalCardLimit) * 100).toFixed(0)}%
-                </h3>
-              </div>
+              <h3 className="text-2xl font-600 text-gray-900">
+                {totalCardLimit > 0
+                  ? `${((totalCardUsage / totalCardLimit) * 100).toFixed(0)}%`
+                  : "—"}
+              </h3>
             </div>
           </div>
 
@@ -93,11 +94,7 @@ export default function Dashboard() {
               </h2>
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={chartData}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="#e5e7eb"
-                    vertical={false}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip />
@@ -114,29 +111,33 @@ export default function Dashboard() {
 
             <div className="p-6 bg-white border-thin border border-gray-200 rounded-lg">
               <h2 className="text-sm font-600 text-gray-900 mb-4">Cartões</h2>
-              <div className="space-y-3">
-                {mockCreditCards.slice(0, 2).map((card) => (
-                  <div
-                    key={card.id}
-                    className="flex justify-between items-center p-3 bg-gray-50 rounded-md"
-                  >
-                    <span className="text-sm text-gray-900">{card.name}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary"
-                          style={{
-                            width: `${(card.used / card.limit) * 100}%`,
-                          }}
-                        />
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {cards.slice(0, 2).map((card) => (
+                    <div
+                      key={card.id}
+                      className="flex justify-between items-center p-3 bg-gray-50 rounded-md"
+                    >
+                      <span className="text-sm text-gray-900">{card.name}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary"
+                            style={{ width: `${(card.used / card.limit) * 100}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-500 text-gray-600 w-10 text-right">
+                          {((card.used / card.limit) * 100).toFixed(0)}%
+                        </span>
                       </div>
-                      <span className="text-xs font-500 text-gray-600 w-10 text-right">
-                        {((card.used / card.limit) * 100).toFixed(0)}%
-                      </span>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -144,9 +145,7 @@ export default function Dashboard() {
           <div className="p-6 bg-white border-thin border border-gray-200 rounded-lg">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h2 className="text-sm font-600 text-gray-900">
-                  Últimas despesas
-                </h2>
+                <h2 className="text-sm font-600 text-gray-900">Últimas despesas</h2>
                 <MonthSelector onChange={setCurrentMonth} />
               </div>
               <button className="text-xs font-500 text-primary hover:text-primary/80 transition-colors">
@@ -154,9 +153,13 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {thisMonthExpenses.length > 0 ? (
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : expenses.length > 0 ? (
               <div className="space-y-0">
-                {thisMonthExpenses.slice(0, 5).map((expense) => (
+                {expenses.slice(0, 5).map((expense) => (
                   <ExpenseItem key={expense.id} expense={expense} />
                 ))}
               </div>
@@ -172,14 +175,18 @@ export default function Dashboard() {
 
           {/* Cards Grid */}
           <div className="p-6 bg-white border-thin border border-gray-200 rounded-lg">
-            <h2 className="text-sm font-600 text-gray-900 mb-4">
-              Seus cartões
-            </h2>
-            <div className="grid grid-cols-3 gap-4">
-              {mockCreditCards.map((card) => (
-                <CardItem key={card.id} card={card} />
-              ))}
-            </div>
+            <h2 className="text-sm font-600 text-gray-900 mb-4">Seus cartões</h2>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                {cards.map((card) => (
+                  <CardItem key={card.id} card={card} />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

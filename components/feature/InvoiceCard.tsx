@@ -60,15 +60,6 @@ export function InvoiceCard({ invoice }: InvoiceCardProps) {
           </span>
         </div>
 
-        {invoice.installments && (
-          <div className="flex justify-between">
-            <span className="text-xs text-gray-600">Parcelas</span>
-            <span className="text-sm font-600 text-gray-900">
-              {invoice.installments}x
-            </span>
-          </div>
-        )}
-
         <div className="flex justify-between pt-2 border-t border-gray-100">
           <span className="text-xs text-gray-600">Vencimento</span>
           <span className="text-xs font-500 text-gray-900">

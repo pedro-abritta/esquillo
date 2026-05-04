@@ -1,96 +1,99 @@
-# Phase 1 — UI Mockup
+# Phase 2 — Supabase Integration, Schema, RLS e CRUD
 
-## 1. Design System Setup
-- [x] Estender `tailwind.config.ts` (palette, spacing, typography, border 0.5px, chart colors)
-- [x] Criar `lib/constants.ts` (categorias despesas, IR, status)
-- [x] Atualizar `lib/utils.ts` (formatadores: currency, date, month)
-- [x] Atualizar `app/globals.css` (custom utilities)
+## 2.0 — Pré-requisito (ação do usuário)
+- [x] Criar projeto no Supabase
+- [x] Passar `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-## 2. Types & Mock Data
-- [x] Criar `lib/types.ts` (Expense, CreditCard, Invoice, Document, User)
-- [x] Criar `lib/mock-data.ts` (fixtures: despesas, cartões, faturas, documentos)
+## 2.1 — Instalação de pacotes
+- [x] `npm install @supabase/supabase-js`
+- [x] `npm install @supabase/ssr`
+- [x] Criar `.env.local` com URL e ANON_KEY
+- [x] Criar `lib/supabase/client.ts` (browser client)
+- [x] Criar `lib/supabase/server.ts` (server client para middleware)
 
-## 3. Shared Components
-- [x] `components/shared/Sidebar.tsx`
-- [x] `components/shared/Header.tsx`
-- [x] `components/shared/MonthSelector.tsx`
-- [x] `components/shared/Mascot.tsx`
-- [x] `components/feature/ExpenseItem.tsx`
-- [x] `components/feature/CardItem.tsx`
-- [x] `components/feature/InvoiceCard.tsx`
-- [x] `components/feature/DocumentCard.tsx`
+## 2.2 — Schema SQL (usuário colou no SQL Editor do Supabase)
+- [x] Trigger `set_updated_at()` compartilhado
+- [x] Tabela `categories` + seed (10 categorias com cor, ícone, ir_category)
+- [x] Tabela `credit_cards` (closing_day + due_day separados)
+- [x] Tabela `expenses` (payment_method, is_deductible, campos de parcelamento)
+- [x] Tabela `invoices` (metadata; total computado via query, não armazenado)
+- [x] Tabela `documents` (storage_path para Supabase Storage)
+- [x] Tabela `investments_fixed` (balance_updated_at ≠ updated_at)
+- [x] Tabela `investments_stock` (balance_updated_at ≠ updated_at)
+- [x] Tabela `recurring_templates` (schema agora, UI na Phase 4)
 
-## 4. Global Layout
-- [x] Atualizar `app/layout.tsx` (grid/flex + Sidebar + Header)
-- [x] Recriar `app/page.tsx` (Dashboard com KPIs + transações + chart)
+## 2.3 — RLS Policies
+- [x] Habilitar RLS em todas as tabelas
+- [x] `categories`: leitura para usuários autenticados
+- [x] `own_rows` policy em todas as tabelas de dados
 
-## 5. Routes & Pages
-- [x] Criar `app/despesas/page.tsx`
-- [x] Criar `app/cartoes/page.tsx`
-- [x] Criar `app/ir/page.tsx`
-- [x] Criar `app/investimentos/page.tsx` (Fase 1 — expandida)
-- [ ] Criar `app/not-found.tsx` (opcional)
+## 2.4 — Storage: bucket `documents` + policies
+- [x] Bucket `documents` (privado) criado no Supabase Dashboard
+- [x] Policies: upload/read/delete por `{user_id}/` como prefixo de caminho
 
-## 6. Investimentos (Fase 1 — Expanded)
+## 2.5 — Auth Flow
+- [x] `app/login/page.tsx` — formulário email + senha
+- [x] `app/auth/callback/route.ts` — allowlist reisapedro@gmail.com
+- [x] `middleware.ts` — protege todas as rotas; valida email
+- [x] `components/shared/Sidebar.tsx` — botão "Sair" wired
 
-### 6.1 Types & Mock Data
-- [x] Estender `lib/types.ts` com `FixedIncomeInvestment` (name, type, balance, contractedRate, maturityDate, updatedAt)
-- [x] Estender `lib/types.ts` com `StockInvestment` (ticker, quantity, totalValue, updatedAt)
-- [x] Estender `lib/mock-data.ts` com 3 investimentos de renda fixa (CDB, Tesouro, LCI) e 3 ações
+## 2.6 — Atualização de tipos (`lib/types.ts`)
+- [x] Novo tipo `PaymentMethod`
+- [x] `Expense`: paymentMethod, isDeductible, campos de parcelamento
+- [x] `CreditCard`: `closingDay` adicionado
+- [x] `FixedIncomeInvestment` + `StockInvestment`: `updatedAt` → `balanceUpdatedAt`
+- [x] Nova interface `Category`
+- [x] Nova interface `RecurringTemplate`
+- [x] `Invoice`: `total` computado, `installments` removido
 
-### 6.2 Sidebar & Routing
-- [x] Adicionar menu item "Investimentos" na `components/shared/Sidebar.tsx` (entre "Cartões" e "IR", ícone `TrendingUp`)
+## 2.7 — Data Layer (`lib/db/`)
+- [x] `lib/db/categories.ts`
+- [x] `lib/db/expenses.ts` (CRUD + createInstallmentGroup)
+- [x] `lib/db/credit-cards.ts`
+- [x] `lib/db/invoices.ts` (getInvoicesWithTotal via join)
+- [x] `lib/db/documents.ts` (upload + signed URL + status update)
+- [x] `lib/db/investments.ts` (CRUD para renda fixa e ações)
 
-### 6.3 Utility Functions
-- [x] Criar em `lib/utils.ts` função `calculateFixedIncomeProjection(investment, months)` que calcula projeção anual (taxa fixa até dez do ano corrente, 1 ano, 2 anos)
+## 2.8 — Wiring Pages
+- [x] `app/(app)/page.tsx` (Dashboard)
+- [x] `app/(app)/despesas/page.tsx`
+- [x] `app/(app)/cartoes/page.tsx`
+- [x] `app/(app)/ir/page.tsx`
+- [x] `app/(app)/investimentos/page.tsx`
 
-### 6.4 Components
-- [x] Criar `components/feature/InvestmentCard.tsx` (renda fixa: nome, saldo, taxa, status "atualizado há X dias", projeções em colunas)
-- [x] Criar `components/feature/StockRow.tsx` (ações: ticker, qtd cotas, valor total, status atualização)
+## 2.9 — CRUD UI (modais shadcn/ui Dialog)
+- [x] `components/feature/ExpenseDialog.tsx` (payment_method, is_deductible, parcelamento)
+- [x] `components/feature/CreditCardDialog.tsx` (closing_day + due_day)
+- [x] `components/feature/DocumentUploadDialog.tsx` (upload PDF + metadados)
+- [x] `components/feature/InvestmentFixedDialog.tsx`
+- [x] `components/feature/InvestmentStockDialog.tsx`
+- [x] `AlertDialog` de delete em: ExpenseItem, CardItem, DocumentCard, InvestmentCard, StockRow
 
-### 6.5 Page
-- [x] Criar `app/investimentos/page.tsx` com:
-  - Header + botões "+ renda fixa" e "+ ação"
-  - 3 KPIs: patrimônio total, total renda fixa, total ações
-  - Seção "Renda fixa" com grid de cards
-  - Seção "Ações" com tabela enxuta
-
-### 6.6 Verification
-- [x] `npm run dev` rodando sem erros
-- [x] Navegação até `/investimentos` funciona
-- [x] Mock data renderiza corretamente (3 renda fixa + 3 ações)
-- [x] KPIs calculam corretamente (R$ 65.700 total)
-- [x] Projeções exibem corretamente para renda fixa (eoy, +1y, +2y)
-- [x] Status "atualizado há X dias" funciona (verde se ≤30d, vermelho se >30d)
-
----
-
-## 7. Verification (Global)
-- [x] `npm run build --no-lint` passou (TypeScript + compile OK)
-- [x] `npm run dev` rodando na porta 3003
-- [ ] `npm run lint` (ESLint tem issue com parser, não afeta build/dev)
+## 2.10 — Verificação
+- [ ] `npm run build --no-lint` passa ✅ (feito)
+- [ ] Login com reisapedro@gmail.com → dashboard
+- [ ] Outro email → `/login?error=unauthorized`
+- [ ] Sem sessão → `/login`
+- [ ] Dashboard: dados reais (sem mock)
+- [ ] Despesas: CRUD (simples + parcelada)
+- [ ] Cartões: CRUD
+- [ ] IR: upload PDF, status, delete
+- [ ] Investimentos: CRUD renda fixa e ação
 
 ---
 
 ## Review
 
-✅ **Phase 1 Complete + Investimentos (5ª tela)**
+**Phase 2 — implementação concluída, aguardando validação end-to-end pelo usuário.**
 
-### Original 4 Screens (✅ Phase 1)
-- **Design System:** Tailwind configurado com paleta completa (primary #BA7517, success, danger, warning, info), spacing, typography, utilities (border 0.5px, chips, status dots)
-- **Types & Mock Data:** 5 tipos originais + 2 novos (FixedIncomeInvestment, StockInvestment), 40+ dados mockados originais + 6 investimentos
-- **Components:** 8 compartilhados + 2 novos feature cards (InvestmentCard, StockRow)
-- **Navigation:** 5 rotas pt-BR funcionais (/, /despesas, /cartoes, **investimentos**, /ir) com Sidebar highlight ativo
-- **Dashboard:** KPI cards, gráfico Recharts, últimas transações, resumo cartões
+### O que foi feito
+- **Auth:** login email+senha, middleware com allowlist, callback route, botão Sair wired
+- **Route groups:** `app/(app)/` com Sidebar, `app/login/` sem Sidebar
+- **Schema:** 8 tabelas (categories, credit_cards, expenses, invoices, documents, investments_fixed, investments_stock, recurring_templates) com triggers de updated_at
+- **RLS:** policies own_rows em todas as tabelas, leitura pública para categories
+- **Storage:** bucket documents privado + 3 policies por user_id/prefix
+- **Data layer:** `lib/db/` com funções CRUD para todas as entidades, conversão snake_case↔camelCase inline
+- **Wiring:** todas as 5 páginas substituíram mock-data por chamadas reais ao Supabase
+- **CRUD UI:** 5 dialogs (ExpenseDialog, CreditCardDialog, DocumentUploadDialog, InvestmentFixedDialog, InvestmentStockDialog) + AlertDialog de delete em todos os itens de lista
 
-### Nova Tela (✅ Investimentos)
-- **Mock Data:** 3 investimentos renda fixa (CDB, Tesouro, LCI) + 3 ações (VALE3, PETR4, ITUB4)
-- **KPIs:** Patrimônio total (R$ 65.700), renda fixa (R$ 50.000), ações (R$ 15.700)
-- **Renda Fixa:** Cards com saldo, taxa, projeções (eoy/+1y/+2y), status atualização (verde ≤30d, vermelho >30d)
-- **Ações:** Tabela com ticker, quantidade, valor, status
-- **Build:** `npm run build --no-lint` ✓ (TypeScript OK, rota compilada 3.17 kB)
-- **Dev:** `npm run dev` ✓ (página renderiza corretamente em http://localhost:3003/investimentos)
-
-**Golden path tested (Investimentos):** Load `/investimentos` → Header rendered, 3 KPI cards calculated correctly, 6 investments displayed, grid + table layouts work, status colors correct, sidebar highlight on Investimentos.
-
-**Next:** Phase 2 — Supabase integration, RLS, CRUD operations on real data.
+**Next:** validação end-to-end pelo usuário no dev server (http://localhost:3001).
