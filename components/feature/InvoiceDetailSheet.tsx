@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { ExpenseItem } from "@/components/feature/ExpenseItem";
 import { getExpensesByInvoice } from "@/lib/db/expenses";
+import { markInvoicePaid, unmarkInvoicePaid } from "@/lib/db/invoice-payments";
 import { formatCurrency, formatShortDate, cn } from "@/lib/utils";
 import type { Invoice, Expense } from "@/lib/types";
 
@@ -16,6 +17,7 @@ interface InvoiceDetailSheetProps {
   invoice: Invoice | null;
   open: boolean;
   onClose: () => void;
+  onRefresh: () => void;
 }
 
 const statusColor: Record<string, string> = {
@@ -30,9 +32,10 @@ const statusLabel: Record<string, string> = {
   PAID: "Paga",
 };
 
-export function InvoiceDetailSheet({ invoice, open, onClose }: InvoiceDetailSheetProps) {
+export function InvoiceDetailSheet({ invoice, open, onClose, onRefresh }: InvoiceDetailSheetProps) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (!open || !invoice) return;
@@ -42,6 +45,22 @@ export function InvoiceDetailSheet({ invoice, open, onClose }: InvoiceDetailShee
       .then(setExpenses)
       .finally(() => setLoading(false));
   }, [open, invoice]);
+
+  async function handleTogglePaid() {
+    if (!invoice) return;
+    setActionLoading(true);
+    try {
+      if (invoice.status === "PAID") {
+        await unmarkInvoicePaid(invoice.cardId, invoice.periodEnd);
+      } else {
+        await markInvoicePaid(invoice.cardId, invoice.periodEnd);
+      }
+      onRefresh();
+      onClose();
+    } finally {
+      setActionLoading(false);
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
@@ -76,6 +95,25 @@ export function InvoiceDetailSheet({ invoice, open, onClose }: InvoiceDetailShee
                   ))}
                 </div>
               )}
+            </div>
+
+            <div className="pt-4 border-t border-gray-100">
+              <button
+                onClick={handleTogglePaid}
+                disabled={actionLoading}
+                className={cn(
+                  "w-full py-2 text-sm rounded-md transition-colors disabled:opacity-50",
+                  invoice.status === "PAID"
+                    ? "border border-gray-200 text-gray-600 hover:bg-gray-50"
+                    : "bg-success text-white hover:bg-success/90"
+                )}
+              >
+                {actionLoading
+                  ? "Salvando..."
+                  : invoice.status === "PAID"
+                  ? "Desfazer pagamento"
+                  : "Marcar como paga"}
+              </button>
             </div>
           </>
         )}

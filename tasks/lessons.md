@@ -43,6 +43,18 @@
 - **Rule:** Campos cujo valor é 100% computável a partir de outros registros são derivados e não pertencem ao banco. Calcule no client no momento da leitura. Se o cálculo for caro, use uma view ou função Postgres — nunca uma coluna que precisa de UPDATE manual para ficar em sincronia.
 - **Surfaced:** Phase 3 — Section 3.2, remoção de `credit_cards.used`.
 
+## UI / Componentes
+
+### Sheet não é substituto de Dialog para modal sólido
+- **Pattern:** Usei `Sheet` (painel lateral deslizante) para o drill-down de fatura esperando comportamento de modal. O resultado foi um painel lateral com fundo transparente, fora do padrão visual esperado.
+- **Rule:** Para modal centralizado com fundo sólido, usar `Dialog` (`DialogContent` com `bg-white` explícito). `Sheet` é exclusivo para painéis laterais deslizantes. O token `bg-popover` padrão do shadcn pode não ser sólido dependendo do tema — sempre sobrescrever com `bg-white` em dialogs de conteúdo.
+- **Surfaced:** Phase 3 — Section 3.2, ajustes visuais do InvoiceDetailSheet.
+
+### `position: absolute` em botões de ação causa sobreposição com elementos do fluxo normal
+- **Pattern:** Coloquei botões de editar/deletar com `absolute top-3 right-3` no `CardItem`. Eles sobrepuseram o chip de status que estava no mesmo canto via fluxo normal flex, resultando em sobreposição visual mesmo com `opacity-0` por padrão.
+- **Rule:** Botões de ação on-hover devem viver no fluxo normal do layout (ex: dentro do mesmo flex row que o elemento vizinho), com `opacity-0 group-hover:opacity-100`. Evitar `position: absolute` para ícones de ação — o posicionamento absoluto ignora o layout adjacente e cria colisões silenciosas.
+- **Surfaced:** Phase 3 — Section 3.2, ajustes visuais do CardItem.
+
 ## Supabase / DB
 
 ### Nunca usar DEFAULT do banco para campos calculados pela lógica de negócio

@@ -175,6 +175,7 @@ export default function Cartoes() {
         invoice={selectedInvoice}
         open={selectedInvoice !== null}
         onClose={() => setSelectedInvoice(null)}
+        onRefresh={refresh}
       />
     </div>
   );
