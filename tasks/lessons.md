@@ -36,6 +36,13 @@
 - **Rule:** Em sistemas com crédito parcelado, persistir `competence_month` explicitamente no banco. Para crédito com cartão: `competence_month = primeiro do mês do period_end da fatura` (via `closing_day`). Para débito/PIX/boleto: `competence_month = primeiro do mês da date`. Nunca derivar competência on-the-fly de `date` bruta — o resultado é inconsistente entre views.
 - **Surfaced:** Phase 3 — Section 3.1, após múltiplas iterações no design de parcelamentos.
 
+## Modelagem — Campos Derivados
+
+### Campos derivados não devem viver no banco
+- **Pattern:** A coluna `used` em `credit_cards` foi persistida no banco, mas seu valor correto é sempre a soma das invoices OPEN do cartão — tornando o campo uma cópia stale que diverge dos dados reais a cada nova despesa.
+- **Rule:** Campos cujo valor é 100% computável a partir de outros registros são derivados e não pertencem ao banco. Calcule no client no momento da leitura. Se o cálculo for caro, use uma view ou função Postgres — nunca uma coluna que precisa de UPDATE manual para ficar em sincronia.
+- **Surfaced:** Phase 3 — Section 3.2, remoção de `credit_cards.used`.
+
 ## Supabase / DB
 
 ### Nunca usar DEFAULT do banco para campos calculados pela lógica de negócio

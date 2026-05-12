@@ -18,7 +18,8 @@ import {
 import { useState, useEffect } from "react";
 import { getExpenses } from "@/lib/db/expenses";
 import { getCreditCards } from "@/lib/db/credit-cards";
-import type { Expense, CreditCard } from "@/lib/types";
+import { getInvoices } from "@/lib/db/invoices";
+import type { Expense, CreditCard, Invoice } from "@/lib/types";
 
 const chartData = [
   { name: "Sem 1", valor: 850 },
@@ -31,6 +32,7 @@ export default function Dashboard() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [cards, setCards] = useState<CreditCard[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,14 +40,24 @@ export default function Dashboard() {
     Promise.all([
       getExpenses(currentMonth.getFullYear(), currentMonth.getMonth()),
       getCreditCards(),
+      getInvoices(),
     ])
-      .then(([e, c]) => { setExpenses(e); setCards(c); })
+      .then(([e, c, i]) => { setExpenses(e); setCards(c); setInvoices(i); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [currentMonth]);
 
+  const usedByCardId = invoices
+    .filter((inv) => inv.status === "OPEN")
+    .reduce((map, inv) => {
+      map.set(inv.cardId, (map.get(inv.cardId) ?? 0) + inv.total);
+      return map;
+    }, new Map<string, number>());
+
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const totalCardUsage = cards.reduce((sum, card) => sum + card.used, 0);
+  const totalCardUsage = invoices
+    .filter((inv) => inv.status === "OPEN")
+    .reduce((sum, inv) => sum + inv.total, 0);
   const totalCardLimit = cards.reduce((sum, card) => sum + card.limit, 0);
   const activeCards = cards.filter((card) => card.status === "ACTIVE").length;
 
@@ -117,25 +129,29 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {cards.slice(0, 2).map((card) => (
-                    <div
-                      key={card.id}
-                      className="flex justify-between items-center p-3 bg-gray-50 rounded-md"
-                    >
-                      <span className="text-sm text-gray-900">{card.name}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary"
-                            style={{ width: `${(card.used / card.limit) * 100}%` }}
-                          />
+                  {cards.slice(0, 2).map((card) => {
+                    const cardUsed = usedByCardId.get(card.id) ?? 0;
+                    const pct = card.limit > 0 ? (cardUsed / card.limit) * 100 : 0;
+                    return (
+                      <div
+                        key={card.id}
+                        className="flex justify-between items-center p-3 bg-gray-50 rounded-md"
+                      >
+                        <span className="text-sm text-gray-900">{card.name}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary"
+                              style={{ width: `${Math.min(pct, 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-500 text-gray-600 w-10 text-right">
+                            {pct.toFixed(0)}%
+                          </span>
                         </div>
-                        <span className="text-xs font-500 text-gray-600 w-10 text-right">
-                          {((card.used / card.limit) * 100).toFixed(0)}%
-                        </span>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -183,7 +199,11 @@ export default function Dashboard() {
             ) : (
               <div className="grid grid-cols-3 gap-4">
                 {cards.map((card) => (
-                  <CardItem key={card.id} card={card} />
+                  <CardItem
+                    key={card.id}
+                    card={card}
+                    used={usedByCardId.get(card.id) ?? 0}
+                  />
                 ))}
               </div>
             )}

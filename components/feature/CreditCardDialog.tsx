@@ -62,7 +62,6 @@ export function CreditCardDialog({ open, onOpenChange, card, onSuccess }: Credit
       name: name.trim(),
       lastFourDigits: lastFourDigits.trim(),
       limit: parseFloat(limit),
-      used: card?.used ?? 0,
       closingDay: parseInt(closingDay),
       dueDay: parseInt(dueDay),
       status,

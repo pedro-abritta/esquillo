@@ -163,6 +163,19 @@ export async function updateExpense(id: string, input: Partial<CreateExpenseInpu
   return toExpense(data as DbExpense);
 }
 
+export async function getExpensesByInvoice(cardId: string, competenceMonth: string): Promise<Expense[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("expenses")
+    .select("*")
+    .eq("card_id", cardId)
+    .eq("competence_month", competenceMonth)
+    .order("date", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data as DbExpense[]).map(toExpense);
+}
+
 export async function deleteExpense(id: string): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase.from("expenses").delete().eq("id", id);

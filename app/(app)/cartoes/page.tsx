@@ -3,6 +3,7 @@
 import { Header } from "@/components/shared/Header";
 import { CardItem } from "@/components/feature/CardItem";
 import { InvoiceCard } from "@/components/feature/InvoiceCard";
+import { InvoiceDetailSheet } from "@/components/feature/InvoiceDetailSheet";
 import { CreditCardDialog } from "@/components/feature/CreditCardDialog";
 import { formatCurrency } from "@/lib/utils";
 import { Plus } from "lucide-react";
@@ -20,6 +21,8 @@ export default function Cartoes() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<CreditCard | undefined>();
 
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+
   const refresh = useCallback(() => {
     setLoading(true);
     setError(null);
@@ -31,8 +34,18 @@ export default function Cartoes() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  // used is derived: sum of OPEN invoice totals per card
+  const usedByCardId = invoices
+    .filter((inv) => inv.status === "OPEN")
+    .reduce((map, inv) => {
+      map.set(inv.cardId, (map.get(inv.cardId) ?? 0) + inv.total);
+      return map;
+    }, new Map<string, number>());
+
   const totalLimit = cards.reduce((sum, card) => sum + card.limit, 0);
-  const totalUsed = cards.reduce((sum, card) => sum + card.used, 0);
+  const totalUsed = invoices
+    .filter((inv) => inv.status === "OPEN")
+    .reduce((sum, inv) => sum + inv.total, 0);
   const activeCards = cards.filter((card) => card.status === "ACTIVE");
 
   if (loading) {
@@ -96,6 +109,7 @@ export default function Cartoes() {
                   <CardItem
                     key={card.id}
                     card={card}
+                    used={usedByCardId.get(card.id) ?? 0}
                     onEdit={() => { setEditingCard(card); setDialogOpen(true); }}
                     onDelete={refresh}
                   />
@@ -112,7 +126,11 @@ export default function Cartoes() {
               <h2 className="text-lg font-600 text-gray-900">Faturas</h2>
               <div className="grid grid-cols-2 gap-4">
                 {invoices.map((invoice) => (
-                  <InvoiceCard key={invoice.id} invoice={invoice} />
+                  <InvoiceCard
+                    key={invoice.id}
+                    invoice={invoice}
+                    onClick={() => setSelectedInvoice(invoice)}
+                  />
                 ))}
               </div>
             </div>
@@ -123,20 +141,23 @@ export default function Cartoes() {
             <div className="p-6 bg-white border-thin border border-gray-200 rounded-lg">
               <h2 className="text-sm font-600 text-gray-900 mb-4">Detalhes dos cartões ativos</h2>
               <div className="space-y-4">
-                {activeCards.map((card) => (
-                  <div key={card.id} className="flex justify-between items-start p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-600 text-gray-900">{card.name}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Fechamento: dia {card.closingDay} · Vencimento: dia {card.dueDay}
-                      </p>
+                {activeCards.map((card) => {
+                  const cardUsed = usedByCardId.get(card.id) ?? 0;
+                  return (
+                    <div key={card.id} className="flex justify-between items-start p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-600 text-gray-900">{card.name}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Fechamento: dia {card.closingDay} · Vencimento: dia {card.dueDay}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-600 text-gray-900">{formatCurrency(card.limit - cardUsed)}</p>
+                        <p className="text-xs text-gray-500">disponível</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-600 text-gray-900">{formatCurrency(card.limit - card.used)}</p>
-                      <p className="text-xs text-gray-500">disponível</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -148,6 +169,12 @@ export default function Cartoes() {
         onOpenChange={setDialogOpen}
         card={editingCard}
         onSuccess={refresh}
+      />
+
+      <InvoiceDetailSheet
+        invoice={selectedInvoice}
+        open={selectedInvoice !== null}
+        onClose={() => setSelectedInvoice(null)}
       />
     </div>
   );

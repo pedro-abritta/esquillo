@@ -18,6 +18,7 @@ import {
 
 interface CardItemProps {
   card: CreditCard;
+  used: number;
   onEdit?: () => void;
   onDelete?: () => void;
 }
@@ -34,11 +35,11 @@ const statusLabel: Record<string, string> = {
   BLOCKED: "Bloqueado",
 };
 
-export function CardItem({ card, onEdit, onDelete }: CardItemProps) {
+export function CardItem({ card, used, onEdit, onDelete }: CardItemProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const percentage = (card.used / card.limit) * 100;
+  const percentage = (used / card.limit) * 100;
 
   async function handleDelete() {
     setDeleting(true);
@@ -54,29 +55,30 @@ export function CardItem({ card, onEdit, onDelete }: CardItemProps) {
   return (
     <>
       <div className="group relative p-4 bg-white border-thin border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
-        {(onEdit || onDelete) && (
-          <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {onEdit && (
-              <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-primary rounded transition-colors" title="Editar">
-                <Pencil size={13} />
-              </button>
-            )}
-            {onDelete && (
-              <button onClick={() => setConfirmOpen(true)} className="p-1.5 text-gray-400 hover:text-danger rounded transition-colors" title="Excluir">
-                <Trash2 size={13} />
-              </button>
-            )}
-          </div>
-        )}
-
         <div className="flex justify-between items-start mb-4">
           <div>
             <h3 className="text-sm font-600 text-gray-900">{card.name}</h3>
             <p className="text-xs text-gray-500">•••• {card.lastFourDigits}</p>
           </div>
-          <span className={cn("text-xs font-500 px-2 py-1 rounded-full", statusColor[card.status] ?? "bg-gray-200 text-gray-700")}>
-            {statusLabel[card.status] ?? card.status}
-          </span>
+          <div className="flex items-center gap-1">
+            <span className={cn("text-xs font-500 px-2 py-1 rounded-full", statusColor[card.status] ?? "bg-gray-200 text-gray-700")}>
+              {statusLabel[card.status] ?? card.status}
+            </span>
+            {(onEdit || onDelete) && (
+              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                {onEdit && (
+                  <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-primary rounded transition-colors" title="Editar">
+                    <Pencil size={13} />
+                  </button>
+                )}
+                {onDelete && (
+                  <button onClick={() => setConfirmOpen(true)} className="p-1.5 text-gray-400 hover:text-danger rounded transition-colors" title="Excluir">
+                    <Trash2 size={13} />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -93,7 +95,7 @@ export function CardItem({ card, onEdit, onDelete }: CardItemProps) {
           <div className="flex justify-between pt-2 border-t border-gray-100">
             <div>
               <p className="text-xs text-gray-600">Usado</p>
-              <p className="text-sm font-600 text-gray-900">{formatCurrency(card.used)}</p>
+              <p className="text-sm font-600 text-gray-900">{formatCurrency(used)}</p>
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-600">Limite</p>

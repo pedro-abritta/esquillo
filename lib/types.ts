@@ -42,7 +42,6 @@ export interface CreditCard {
   name: string;
   lastFourDigits: string;
   limit: number;
-  used: number;
   status: CardStatus;
   closingDay: number;
   dueDay: number;

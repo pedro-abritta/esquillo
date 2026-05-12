@@ -3,9 +3,10 @@ import { formatCurrency, formatShortDate, cn } from "@/lib/utils";
 
 interface InvoiceCardProps {
   invoice: Invoice;
+  onClick?: () => void;
 }
 
-export function InvoiceCard({ invoice }: InvoiceCardProps) {
+export function InvoiceCard({ invoice, onClick }: InvoiceCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "CLOSED":
@@ -33,7 +34,10 @@ export function InvoiceCard({ invoice }: InvoiceCardProps) {
   };
 
   return (
-    <div className="p-4 bg-white border-thin border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+    <div
+      className="p-4 bg-white border-thin border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+      onClick={onClick}
+    >
       <div className="flex justify-between items-start mb-3">
         <div>
           <h3 className="text-sm font-600 text-gray-900">{invoice.cardName}</h3>
