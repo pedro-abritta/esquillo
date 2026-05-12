@@ -21,12 +21,6 @@ import { getCreditCards } from "@/lib/db/credit-cards";
 import { getInvoices } from "@/lib/db/invoices";
 import type { Expense, CreditCard, Invoice } from "@/lib/types";
 
-const chartData = [
-  { name: "Sem 1", valor: 850 },
-  { name: "Sem 2", valor: 1200 },
-  { name: "Sem 3", valor: 950 },
-  { name: "Sem 4", valor: 1400 },
-];
 
 export default function Dashboard() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -55,6 +49,18 @@ export default function Dashboard() {
     }, new Map<string, number>());
 
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+
+  const weeklyData = [
+    { name: "Sem 1", valor: 0 },
+    { name: "Sem 2", valor: 0 },
+    { name: "Sem 3", valor: 0 },
+    { name: "Sem 4", valor: 0 },
+  ];
+  for (const exp of expenses) {
+    const day = parseInt(exp.date.slice(8, 10), 10);
+    const bucket = day <= 7 ? 0 : day <= 14 ? 1 : day <= 21 ? 2 : 3;
+    weeklyData[bucket].valor += exp.amount;
+  }
   const totalCardUsage = invoices
     .filter((inv) => inv.status === "OPEN")
     .reduce((sum, inv) => sum + inv.total, 0);
@@ -70,9 +76,9 @@ export default function Dashboard() {
           {/* KPI Cards */}
           <div className="grid grid-cols-4 gap-4">
             <div className="p-4 bg-white border-thin border border-gray-200 rounded-lg">
-              <p className="text-xs text-gray-600 mb-2">Saldo do mês</p>
+              <p className="text-xs text-gray-600 mb-2">Faturas abertas</p>
               <h3 className="text-2xl font-600 text-gray-900">
-                {formatCurrency(5000 - totalExpenses)}
+                {formatCurrency(totalCardUsage)}
               </h3>
             </div>
 
@@ -105,7 +111,7 @@ export default function Dashboard() {
                 Despesas da semana
               </h2>
               <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={chartData}>
+                <LineChart data={weeklyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />

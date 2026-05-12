@@ -1,42 +1,47 @@
-# Phase 3 — Section 3.3: Projeção de faturas futuras + marcação PAID ✅
+# Phase 3 — Section 3.4: Dashboard com dados reais
 
 ## Escopo
-- Projetar 3 períodos futuros por cartão ACTIVE, mesmo sem despesas (total = R$0,00)
-- Persistir marcação PAID em nova tabela `invoice_payments`
-- Botão "Marcar como paga" / "Desfazer pagamento" no Dialog de detalhe da fatura
-- Fora do escopo: edição de despesas dentro da fatura, filtro por status
+- Substituir mock data restante por dados reais
+- Nenhuma feature nova — apenas wiring de dados existentes a componentes existentes
+- Fora do escopo: receitas/saldo real (depende de Phase 4), novos gráficos complexos
+
+### O que está hardcoded hoje e precisa de correção
+| Elemento | Problema | Solução |
+|---|---|---|
+| KPI "Saldo do mês" | `5000 - totalExpenses` hardcoded | Substituir por "Faturas abertas" (R$ das invoices OPEN) |
+| Gráfico "Despesas da semana" | Array `chartData` estático | Agrupar `expenses` por semana do mês selecionado |
+
+### O que já está real e fica como está
+- KPI "Despesas" (totalExpenses) ✅
+- KPI "Cartões ativos" (count real) ✅
+- KPI "Limite utilizado %" (real via invoices) ✅
+- Mini-barras de cartões (usedByCardId real) ✅
+- Lista "Últimas despesas" (real) ✅
+- Grid "Seus cartões" (real via CardItem) ✅
 
 ---
 
 ## Checklist de Execução
 
-### A. Schema
-- [x] **[SQL]** Tabela `invoice_payments` + RLS criada no Supabase Studio
+### A. KPI 1 — remover hardcoded
+- [ ] **`app/(app)/page.tsx`** — substituir KPI "Saldo do mês" (hardcoded `5000`) por:
+  - Label: "Faturas abertas"
+  - Valor: `totalCardUsage` (já computado na página via invoices OPEN)
 
-### B. Camada de dados
-- [x] **`lib/db/invoice-payments.ts`** — `getInvoicePaymentKeys`, `markInvoicePaid`, `unmarkInvoicePaid`
-- [x] **`lib/db/invoices.ts`** — 3ª query paralela de paid keys + projeção de 3 períodos futuros por cartão ACTIVE via `getUpcomingPeriods`; status PAID/CLOSED/OPEN derivado em runtime
+### B. Gráfico — despesas por semana com dados reais
+- [ ] **`app/(app)/page.tsx`** — remover `chartData` estático; calcular `weeklyData` a partir de `expenses`:
+  - 4 buckets fixos: "Sem 1" (dias 1–7), "Sem 2" (8–14), "Sem 3" (15–21), "Sem 4" (22+)
+  - Agrupar por `expense.date` (dia da compra); somar `expense.amount` no bucket correspondente
+  - Tipo: `{ name: string; valor: number }[]` — mesma forma que o `chartData` atual (zero mudança no componente Recharts)
 
-### C. UI — InvoiceDetailSheet (Dialog)
-- [x] Prop `onRefresh: () => void` adicionada
-- [x] Botão "Marcar como paga" / "Desfazer pagamento" no rodapé com loading local
-
-### D. Page
-- [x] `app/(app)/cartoes/page.tsx` — passa `onRefresh={refresh}` para `InvoiceDetailSheet`
-
-### E. Verificação
-- [x] `npm run build --no-lint` passa sem erros
-
----
-
-## Review
-
-✅ **Section 3.3 Complete**
-
-- **Projeção:** `getInvoices()` injeta slots vazios (total = 0) para os próximos 3 períodos de cada cartão ACTIVE, usando `getUpcomingPeriods` — sem nova coluna no banco
-- **PAID persistido:** tabela `invoice_payments` com RLS; chave composta `(user_id, card_id, period_end)`; status derivado em runtime — PAID tem precedência sobre CLOSED/OPEN
-- **Toggle:** "Marcar como paga" → `upsert`; "Desfazer" → `delete`; após ação fecha Dialog e recarrega lista
+### C. Verificação
+- [ ] `npm run build --no-lint` passa
+- [ ] KPI "Faturas abertas" exibe valor real das invoices OPEN
+- [ ] Gráfico reflete despesas reais do mês selecionado (buckets mudam ao trocar mês)
+- [ ] Nenhum valor hardcoded restante no dashboard
 
 ---
 
-**Next:** Section 3.4 — Dashboard com dados reais (gráficos, KPIs, projeção).
+## Sequência de execução (após aprovação)
+1. `app/(app)/page.tsx` — duas mudanças cirúrgicas: KPI + weeklyData
+2. Build + verificação visual
