@@ -81,6 +81,12 @@ export function ExpenseDialog({ open, onOpenChange, expense, onSuccess }: Expens
     setSubmitting(true);
     setError(null);
 
+    if (paymentMethod === "CREDITO" && !cardId) {
+      setError("Selecione um cartão para despesas no crédito.");
+      setSubmitting(false);
+      return;
+    }
+
     const base = {
       description: description.trim(),
       category,

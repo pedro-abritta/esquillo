@@ -27,6 +27,7 @@ export interface Expense {
   category: ExpenseCategory;
   amount: number;
   date: string;
+  competenceMonth: string;
   paymentMethod: PaymentMethod;
   isDeductible: boolean;
   cardId?: string;

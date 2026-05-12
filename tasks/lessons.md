@@ -24,7 +24,31 @@
 - **Rule:** Usar `npm run build --no-lint` para verificar compilação real. O lint broken não impede dev server nem build de funcionarem. Investigar upgrade do ESLint ou config de ignores se necessário antes da Phase 6 (security review).
 - **Surfaced:** Phase 1 — adição da tela de Investimentos.
 
+## Modelagem de Dados
+
+### "Data do evento" vs "âncora de período" em parcelamentos
+- **Pattern:** Em `createInstallmentGroup`, usei o campo `date` de cada parcela como proxy para indicar a qual fatura ela pertence — distribuindo as datas mensalmente. Isso conflou dois conceitos distintos: (1) *quando* a compra aconteceu e (2) *em qual fatura* cada parcela cai. O resultado: histórico de despesas corrompido e `getInvoices` agrupando todas as parcelas na mesma fatura quando têm a mesma data.
+- **Rule:** `date` é sempre a **data original da compra** — idêntica em todas as parcelas do mesmo grupo. Qual fatura cada parcela pertence é responsabilidade do campo `installment_number`: calcule o período como `getInvoicePeriodForExpense({ date, isInstallment, installmentNumber }, card)`. Nunca manipular `date` para fins de agrupamento de fatura — são conceitos ortogonais.
+- **Surfaced:** Phase 3 — Section 3.1, validação manual do parcelamento.
+
+### "Data do evento" vs "competência financeira" em sistemas de crédito
+- **Pattern:** Modelei parcelamentos usando apenas `date` para representar tanto a data da compra quanto o posicionamento temporal de cada parcela, levando a múltiplas iterações de correção. Para crédito, três conceitos divergem: (1) `date` — quando a compra ocorreu (imutável); (2) `competence_month` — em qual mês o valor impacta o fluxo de caixa; (3) período de fatura — derivado de `closing_day`. Comprar no dia 19 num cartão que fecha dia 15 faz a competência cair em junho, não em maio.
+- **Rule:** Em sistemas com crédito parcelado, persistir `competence_month` explicitamente no banco. Para crédito com cartão: `competence_month = primeiro do mês do period_end da fatura` (via `closing_day`). Para débito/PIX/boleto: `competence_month = primeiro do mês da date`. Nunca derivar competência on-the-fly de `date` bruta — o resultado é inconsistente entre views.
+- **Surfaced:** Phase 3 — Section 3.1, após múltiplas iterações no design de parcelamentos.
+
 ## Supabase / DB
+
+### Nunca usar DEFAULT do banco para campos calculados pela lógica de negócio
+- **Pattern:** Adicionei `DEFAULT CURRENT_DATE` à coluna `competence_month` para facilitar o `NOT NULL`. Expenses criadas após o `ALTER TABLE` e antes dos `UPDATE`s de migração ficaram com a data errada (hoje em vez do mês correto calculado).
+- **Rule:** Campos derivados de lógica de negócio devem ser calculados no client antes do INSERT — nunca delegados ao DEFAULT do banco. Se a coluna for `NOT NULL`, adicionar temporariamente como nullable, rodar a migração, depois adicionar a constraint. O DEFAULT do banco só é válido para campos técnicos (`created_at`, `id`, `user_id`).
+- **Surfaced:** Phase 3 — Section 3.1, migração de `competence_month`.
+
+### CURRENT_DATE no Postgres/Supabase usa UTC — evitar para usuários BR
+- **Pattern:** `CURRENT_DATE` no Postgres do Supabase retorna a data UTC. Após 21h no Brasil (UTC-3), já é o dia seguinte em UTC — causando off-by-one em qualquer campo baseado em "hoje" para usuários brasileiros.
+- **Rule:** Nunca usar `CURRENT_DATE`, `NOW()`, ou `DEFAULT CURRENT_DATE` para campos de negócio em apps com usuários BR. Calcular a data no client TypeScript (onde o timezone é o do usuário) e enviar o valor explicitamente no payload do INSERT.
+- **Surfaced:** Phase 3 — Section 3.1, migração de `competence_month` após as 21h.
+
+
 
 ### user_id ausente nos INSERTs causa violação de RLS
 - **Pattern:** Escrevi payloads de INSERT para todas as funções de DB sem incluir `user_id`. A coluna é `NOT NULL` e a policy RLS avalia `auth.uid() = user_id` — com `user_id = NULL` o resultado é `NULL` (não `TRUE`), bloqueando o INSERT antes mesmo da constraint NOT NULL disparar.

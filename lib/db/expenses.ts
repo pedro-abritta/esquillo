@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { getCompetenceMonth } from "@/lib/invoice-cycle";
 import type { Expense, ExpenseCategory, PaymentMethod } from "@/lib/types";
 
 type DbExpense = {
@@ -7,6 +8,7 @@ type DbExpense = {
   category: string;
   amount: number;
   date: string;
+  competence_month: string;
   payment_method: string;
   is_deductible: boolean;
   card_id: string | null;
@@ -23,6 +25,7 @@ function toExpense(row: DbExpense): Expense {
     category: row.category as ExpenseCategory,
     amount: row.amount,
     date: row.date,
+    competenceMonth: row.competence_month,
     paymentMethod: row.payment_method as PaymentMethod,
     isDeductible: row.is_deductible,
     cardId: row.card_id ?? undefined,
@@ -35,14 +38,12 @@ function toExpense(row: DbExpense): Expense {
 
 export async function getExpenses(year: number, month: number): Promise<Expense[]> {
   const supabase = createClient();
-  const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-  const end = new Date(year, month + 1, 0).toISOString().slice(0, 10);
+  const competenceMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
 
   const { data, error } = await supabase
     .from("expenses")
     .select("*")
-    .gte("date", start)
-    .lte("date", end)
+    .eq("competence_month", competenceMonth)
     .order("date", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -54,16 +55,29 @@ export async function getAllExpenses(): Promise<Expense[]> {
   const { data, error } = await supabase
     .from("expenses")
     .select("*")
+    .order("competence_month", { ascending: false })
     .order("date", { ascending: false });
 
   if (error) throw new Error(error.message);
   return (data as DbExpense[]).map(toExpense);
 }
 
-type CreateExpenseInput = Omit<Expense, "id">;
+// competenceMonth is computed internally — callers never provide it
+type CreateExpenseInput = Omit<Expense, "id" | "competenceMonth">;
 
 export async function createExpense(input: CreateExpenseInput): Promise<Expense> {
   const supabase = createClient();
+
+  let card: { closingDay: number; dueDay: number } | undefined;
+  if (input.paymentMethod === "CREDITO" && input.cardId) {
+    const { data: cardData } = await supabase
+      .from("credit_cards")
+      .select("closing_day, due_day")
+      .eq("id", input.cardId)
+      .single();
+    if (cardData) card = { closingDay: cardData.closing_day, dueDay: cardData.due_day };
+  }
+
   const { data, error } = await supabase
     .from("expenses")
     .insert({
@@ -71,6 +85,7 @@ export async function createExpense(input: CreateExpenseInput): Promise<Expense>
       category: input.category,
       amount: input.amount,
       date: input.date,
+      competence_month: getCompetenceMonth(input.date, input.paymentMethod, card),
       payment_method: input.paymentMethod,
       is_deductible: input.isDeductible,
       card_id: input.cardId ?? null,
@@ -87,31 +102,40 @@ export async function createExpense(input: CreateExpenseInput): Promise<Expense>
 }
 
 export async function createInstallmentGroup(
-  base: Omit<Expense, "id" | "isInstallment" | "installmentNumber" | "totalInstallments" | "installmentGroupId">,
+  base: Omit<Expense, "id" | "isInstallment" | "installmentNumber" | "totalInstallments" | "installmentGroupId" | "competenceMonth">,
   totalInstallments: number
 ): Promise<void> {
   const supabase = createClient();
+
+  let card: { closingDay: number; dueDay: number } | undefined;
+  if (base.paymentMethod === "CREDITO" && base.cardId) {
+    const { data: cardData } = await supabase
+      .from("credit_cards")
+      .select("closing_day, due_day")
+      .eq("id", base.cardId)
+      .single();
+    if (cardData) card = { closingDay: cardData.closing_day, dueDay: cardData.due_day };
+  }
+
   const groupId = crypto.randomUUID();
   const installmentAmount = base.amount / totalInstallments;
-  const baseDate = new Date(base.date);
 
-  const rows = Array.from({ length: totalInstallments }, (_, i) => {
-    const date = new Date(baseDate);
-    date.setMonth(date.getMonth() + i);
-    return {
-      description: base.description,
-      category: base.category,
-      amount: installmentAmount,
-      date: date.toISOString().slice(0, 10),
-      payment_method: base.paymentMethod,
-      is_deductible: base.isDeductible,
-      card_id: base.cardId ?? null,
-      is_installment: true,
-      installment_number: i + 1,
-      total_installments: totalInstallments,
-      installment_group_id: groupId,
-    };
-  });
+  // All installments share the original purchase date.
+  // competence_month is computed per-installment from the invoice cycle.
+  const rows = Array.from({ length: totalInstallments }, (_, i) => ({
+    description: base.description,
+    category: base.category,
+    amount: installmentAmount,
+    date: base.date,
+    competence_month: getCompetenceMonth(base.date, base.paymentMethod, card, i + 1),
+    payment_method: base.paymentMethod,
+    is_deductible: base.isDeductible,
+    card_id: base.cardId ?? null,
+    is_installment: true,
+    installment_number: i + 1,
+    total_installments: totalInstallments,
+    installment_group_id: groupId,
+  }));
 
   const { error } = await supabase.from("expenses").insert(rows);
   if (error) throw new Error(error.message);

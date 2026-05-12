@@ -2,7 +2,7 @@
 
 import { Expense } from "@/lib/types";
 import { EXPENSE_CATEGORIES } from "@/lib/constants";
-import { formatCurrency, formatShortDate, cn } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { deleteExpense } from "@/lib/db/expenses";
@@ -42,6 +42,11 @@ export function ExpenseItem({ expense, onEdit, onDelete }: ExpenseItemProps) {
 
   const categoryLabel = EXPENSE_CATEGORIES[expense.category as keyof typeof EXPENSE_CATEGORIES];
   const dotColor = categoryColors[expense.category] || "bg-gray-500";
+  const installmentLabel =
+    expense.isInstallment && expense.installmentNumber && expense.totalInstallments
+      ? `parcela ${expense.installmentNumber}/${expense.totalInstallments}`
+      : null;
+  const purchaseDate = `${expense.date.slice(8, 10)}/${expense.date.slice(5, 7)}`;
 
   async function handleDelete() {
     setDeleting(true);
@@ -61,13 +66,16 @@ export function ExpenseItem({ expense, onEdit, onDelete }: ExpenseItemProps) {
           <div className={cn("w-2 h-2 rounded-full flex-shrink-0", dotColor)} />
           <div className="flex-1">
             <p className="text-sm font-500 text-gray-900">{expense.description}</p>
-            <p className="text-xs text-gray-500">{categoryLabel}</p>
+            <p className="text-xs text-gray-500">
+              {categoryLabel}
+              {installmentLabel && <span className="text-gray-400"> · {installmentLabel}</span>}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
             <p className="text-sm font-600 text-gray-900">{formatCurrency(expense.amount)}</p>
-            <p className="text-xs text-gray-500">{formatShortDate(expense.date)}</p>
+            <p className="text-xs text-gray-500">compra em {purchaseDate}</p>
           </div>
           {(onEdit || onDelete) && (
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

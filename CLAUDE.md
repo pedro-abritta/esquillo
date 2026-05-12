@@ -20,17 +20,17 @@ Single repo, full-stack Next.js. No separate FastAPI service.
 
 Tracked in `tasks/roadmap.md`. Current phase determines what is valid to install/build.
 
-| Phase | Includes |
-|---|---|
-| 0. Setup | Repo, Next.js scaffold, Tailwind, shadcn primitives |
-| 1. UI Mockup | 4 main screens with mock data, full navigation |
-| 2. Schema + Core CRUD | Supabase, types, RLS, basic CRUD |
-| 3. Cards + Invoices | Cards CRUD, installment splitting, invoice projection |
-| 4. Recurring | Templates + monthly confirmation flow |
-| 5. Dashboard (real data) | Charts wired to real aggregations |
-| 6. Security | RLS audit, rate limit, CSP/HSTS, upload validation, audit log |
-| 7. IR Folder | PDF storage, deductible categories, zip export |
-| 8. Extras | NL quick-add, OCR for receipts |
+| Phase | Includes | Status |
+|---|---|---|
+| 0. Setup | Repo, Next.js scaffold, Tailwind, shadcn primitives | Done |
+| 1. UI Mockup | 5 main screens with mock data, full navigation | Done |
+| 2. Schema + Core CRUD | Supabase, types, RLS, basic CRUD | Done |
+| 3. Cards + Invoices | Cards CRUD, installment splitting, invoice projection | Current |
+| 4. Recurring | Templates + monthly confirmation flow | Pending |
+| 5. Dashboard (real data) | Charts wired to real aggregations | Pending |
+| 6. Security | RLS audit, rate limit, CSP/HSTS, upload validation, audit log | Pending |
+| 7. IR Folder | PDF storage, deductible categories, zip export | Pending |
+| 8. Extras | NL quick-add, OCR for receipts | Pending |
 
 **Never anticipate features from a future phase without explicit user approval.**
 
@@ -77,12 +77,12 @@ These rules exist because violating them caused real damage in past sessions. Th
 - After **any** correction from the user: STOP, append the pattern to `tasks/lessons.md`, **then** continue.
 - Registering happens **before** resuming work, not after — "after" tends to become "never".
 - Use this exact format for each entry:
-```markdown
+  ```markdown
   ### <Short title>
   - **Pattern:** what went wrong, in one sentence.
   - **Rule:** the rule for myself that prevents recurrence.
   - **Surfaced:** which session or task it appeared in.
-```
+  ```
 - Read `tasks/lessons.md` at the start of every session.
 - Iterate ruthlessly until the same mistake stops happening.
 
@@ -103,6 +103,10 @@ These rules exist because violating them caused real damage in past sessions. Th
 - When given a bug report: just fix it. Don't ask for hand-holding.
 - Point at logs, errors, failing tests — then resolve them.
 - Zero context-switching required from the user.
+
+### 7. Section-by-Section Pacing
+- Plan and execute one section at a time, not full phases at once.
+- Each session focuses on a single sub-objective: plan mode → user approval → execution → review → only then move to the next section.
 
 ---
 
@@ -202,16 +206,6 @@ tasks/
 - Package manager: npm.
 - Node: assume system Node install (no nvm assumption).
 - See "Shell Execution Rules" above. Those rules are not optional.
-
----
-
-## Don't Do (Phase 1)
-
-- Don't install Supabase, Prisma, NextAuth, Zod, React Hook Form, Mercado Pago, or any backend dep.
-- Don't build API routes.
-- Don't wire up auth.
-- Don't persist data — read everything from `lib/mock-data.ts`.
-- Don't implement the IR zip export logic — render the UI only.
 
 ---
 
