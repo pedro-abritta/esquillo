@@ -2,6 +2,11 @@ export type ExpenseCategory =
   | "ALIMENTACAO" | "TRANSPORTE" | "SAUDE" | "EDUCACAO" | "LAZER"
   | "MORADIA" | "UTILIDADES" | "TELEFONE" | "SEGUROS" | "DIVERSOS";
 
+export type IncomeCategory =
+  | "SALARIO" | "FREELANCE" | "BONUS" | "ALUGUEL" | "INVESTIMENTO" | "OUTROS";
+
+export type RecurringType = "expense" | "income";
+
 export type IRCategory =
   | "ALUGUEL" | "MATERIAL" | "EDUCACAO" | "SAUDE" | "DESPESAS_VIAGEM"
   | "PROFISSIONAL" | "OUTROS";
@@ -95,14 +100,25 @@ export interface StockInvestment {
 
 export interface RecurringTemplate {
   id: string;
+  type: RecurringType;
   description: string;
-  category: ExpenseCategory;
+  category: ExpenseCategory | IncomeCategory;
   amount: number;
-  paymentMethod: PaymentMethod;
+  paymentMethod?: PaymentMethod;
   cardId?: string;
   isDeductible: boolean;
   dayOfMonth: number;
   active: boolean;
+}
+
+export interface IncomeEntry {
+  id: string;
+  description: string;
+  amount: number;
+  date: string;
+  competenceMonth: string;
+  category: IncomeCategory;
+  recurringTemplateId?: string;
 }
 
 export interface DbError {

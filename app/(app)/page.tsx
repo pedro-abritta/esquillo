@@ -5,7 +5,7 @@ import { MonthSelector } from "@/components/shared/MonthSelector";
 import { ExpenseItem } from "@/components/feature/ExpenseItem";
 import { CardItem } from "@/components/feature/CardItem";
 import { Mascot } from "@/components/shared/Mascot";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, buildUsedByCardId } from "@/lib/utils";
 import {
   LineChart,
   Line,
@@ -28,25 +28,22 @@ export default function Dashboard() {
   const [cards, setCards] = useState<CreditCard[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
+    setError(null);
     Promise.all([
       getExpenses(currentMonth.getFullYear(), currentMonth.getMonth()),
       getCreditCards(),
       getInvoices(),
     ])
       .then(([e, c, i]) => { setExpenses(e); setCards(c); setInvoices(i); })
-      .catch(() => {})
+      .catch(() => setError("Erro ao carregar dados."))
       .finally(() => setLoading(false));
   }, [currentMonth]);
 
-  const usedByCardId = invoices
-    .filter((inv) => inv.status === "OPEN")
-    .reduce((map, inv) => {
-      map.set(inv.cardId, (map.get(inv.cardId) ?? 0) + inv.total);
-      return map;
-    }, new Map<string, number>());
+  const usedByCardId = buildUsedByCardId(invoices);
 
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
@@ -66,6 +63,15 @@ export default function Dashboard() {
     .reduce((sum, inv) => sum + inv.total, 0);
   const totalCardLimit = cards.reduce((sum, card) => sum + card.limit, 0);
   const activeCards = cards.filter((card) => card.status === "ACTIVE").length;
+
+  if (error) {
+    return (
+      <div className="flex flex-col h-full">
+        <Header title="Dashboard" />
+        <p className="text-sm text-danger text-center mt-16">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">

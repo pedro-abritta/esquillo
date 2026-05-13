@@ -39,7 +39,7 @@ export function CardItem({ card, used, onEdit, onDelete }: CardItemProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const percentage = (used / card.limit) * 100;
+  const percentage = card.limit > 0 ? Math.min((used / card.limit) * 100, 100) : 0;
 
   async function handleDelete() {
     setDeleting(true);
@@ -88,7 +88,7 @@ export function CardItem({ card, used, onEdit, onDelete }: CardItemProps) {
               <span className="text-xs font-600 text-gray-900">{percentage.toFixed(0)}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${Math.min(percentage, 100)}%` }} />
+              <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${percentage}%` }} />
             </div>
           </div>
 

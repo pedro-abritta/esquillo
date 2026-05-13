@@ -25,8 +25,8 @@ Tracked in `tasks/roadmap.md`. Current phase determines what is valid to install
 | 0. Setup | Repo, Next.js scaffold, Tailwind, shadcn primitives | Done |
 | 1. UI Mockup | 5 main screens with mock data, full navigation | Done |
 | 2. Schema + Core CRUD | Supabase, types, RLS, basic CRUD | Done |
-| 3. Cards + Invoices | Cards CRUD, installment splitting, invoice projection | Current |
-| 4. Recurring | Templates + monthly confirmation flow | Pending |
+| 3. Cards + Invoices | Cards CRUD, installment splitting, invoice projection | Done |
+| 4. Recurring | Templates + monthly confirmation flow | Current |
 | 5. Dashboard (real data) | Charts wired to real aggregations | Pending |
 | 6. Security | RLS audit, rate limit, CSP/HSTS, upload validation, audit log | Pending |
 | 7. IR Folder | PDF storage, deductible categories, zip export | Pending |

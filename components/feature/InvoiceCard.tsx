@@ -1,5 +1,6 @@
 import { Invoice } from "@/lib/types";
 import { formatCurrency, formatShortDate, cn } from "@/lib/utils";
+import { INVOICE_STATUS, INVOICE_STATUS_COLOR } from "@/lib/constants";
 
 interface InvoiceCardProps {
   invoice: Invoice;
@@ -7,32 +8,6 @@ interface InvoiceCardProps {
 }
 
 export function InvoiceCard({ invoice, onClick }: InvoiceCardProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "CLOSED":
-        return "bg-warning text-white";
-      case "OPEN":
-        return "bg-info text-white";
-      case "PAID":
-        return "bg-success text-white";
-      default:
-        return "bg-gray-200 text-gray-700";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "CLOSED":
-        return "Fechada";
-      case "OPEN":
-        return "Aberta";
-      case "PAID":
-        return "Paga";
-      default:
-        return status;
-    }
-  };
-
   return (
     <div
       className="p-4 bg-white border-thin border border-gray-200 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
@@ -49,10 +24,10 @@ export function InvoiceCard({ invoice, onClick }: InvoiceCardProps) {
         <span
           className={cn(
             "text-xs font-500 px-2 py-1 rounded-full",
-            getStatusColor(invoice.status)
+            INVOICE_STATUS_COLOR[invoice.status] ?? "bg-gray-200 text-gray-700"
           )}
         >
-          {getStatusLabel(invoice.status)}
+          {INVOICE_STATUS[invoice.status as keyof typeof INVOICE_STATUS] ?? invoice.status}
         </span>
       </div>
 

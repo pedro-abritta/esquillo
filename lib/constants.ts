@@ -1,3 +1,12 @@
+export const INCOME_CATEGORIES = {
+  SALARIO: "Salário",
+  FREELANCE: "Freela",
+  BONUS: "Bônus",
+  ALUGUEL: "Aluguel recebido",
+  INVESTIMENTO: "Rendimentos",
+  OUTROS: "Outros",
+} as const;
+
 export const EXPENSE_CATEGORIES = {
   ALIMENTACAO: "Alimentação",
   TRANSPORTE: "Transporte",
@@ -38,3 +47,9 @@ export const INVOICE_STATUS = {
   CLOSED: "Fechada",
   PAID: "Paga",
 } as const;
+
+export const INVOICE_STATUS_COLOR: Record<string, string> = {
+  OPEN: "bg-info text-white",
+  CLOSED: "bg-warning text-white",
+  PAID: "bg-success text-white",
+};

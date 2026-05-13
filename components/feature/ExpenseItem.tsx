@@ -2,7 +2,7 @@
 
 import { Expense } from "@/lib/types";
 import { EXPENSE_CATEGORIES } from "@/lib/constants";
-import { formatCurrency, cn } from "@/lib/utils";
+import { formatCurrency, formatDayMonth, cn } from "@/lib/utils";
 import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { deleteExpense } from "@/lib/db/expenses";
@@ -46,7 +46,7 @@ export function ExpenseItem({ expense, onEdit, onDelete }: ExpenseItemProps) {
     expense.isInstallment && expense.installmentNumber && expense.totalInstallments
       ? `parcela ${expense.installmentNumber}/${expense.totalInstallments}`
       : null;
-  const purchaseDate = `${expense.date.slice(8, 10)}/${expense.date.slice(5, 7)}`;
+  const purchaseDate = formatDayMonth(expense.date);
 
   async function handleDelete() {
     setDeleting(true);

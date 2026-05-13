@@ -2,6 +2,7 @@ import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import type { Invoice } from "@/lib/types"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -27,6 +28,19 @@ export function formatMonth(date: Date | string): string {
 export function formatShortDate(date: Date | string): string {
   const dateObj = typeof date === "string" ? parseISO(date) : date
   return format(dateObj, "dd/MM/yyyy", { locale: ptBR })
+}
+
+export function formatDayMonth(isoDate: string): string {
+  return `${isoDate.slice(8, 10)}/${isoDate.slice(5, 7)}`
+}
+
+export function buildUsedByCardId(invoices: Invoice[]): Map<string, number> {
+  return invoices
+    .filter((inv) => inv.status === "OPEN")
+    .reduce((map, inv) => {
+      map.set(inv.cardId, (map.get(inv.cardId) ?? 0) + inv.total)
+      return map
+    }, new Map<string, number>())
 }
 
 export function calculateFixedIncomeProjection(

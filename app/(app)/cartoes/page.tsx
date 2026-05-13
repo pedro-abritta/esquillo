@@ -5,7 +5,7 @@ import { CardItem } from "@/components/feature/CardItem";
 import { InvoiceCard } from "@/components/feature/InvoiceCard";
 import { InvoiceDetailSheet } from "@/components/feature/InvoiceDetailSheet";
 import { CreditCardDialog } from "@/components/feature/CreditCardDialog";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, buildUsedByCardId } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { getCreditCards } from "@/lib/db/credit-cards";
@@ -34,13 +34,7 @@ export default function Cartoes() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  // used is derived: sum of OPEN invoice totals per card
-  const usedByCardId = invoices
-    .filter((inv) => inv.status === "OPEN")
-    .reduce((map, inv) => {
-      map.set(inv.cardId, (map.get(inv.cardId) ?? 0) + inv.total);
-      return map;
-    }, new Map<string, number>());
+  const usedByCardId = buildUsedByCardId(invoices);
 
   const totalLimit = cards.reduce((sum, card) => sum + card.limit, 0);
   const totalUsed = invoices

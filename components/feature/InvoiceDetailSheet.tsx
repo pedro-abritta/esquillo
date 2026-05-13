@@ -11,6 +11,7 @@ import { ExpenseItem } from "@/components/feature/ExpenseItem";
 import { getExpensesByInvoice } from "@/lib/db/expenses";
 import { markInvoicePaid, unmarkInvoicePaid } from "@/lib/db/invoice-payments";
 import { formatCurrency, formatShortDate, cn } from "@/lib/utils";
+import { INVOICE_STATUS, INVOICE_STATUS_COLOR } from "@/lib/constants";
 import type { Invoice, Expense } from "@/lib/types";
 
 interface InvoiceDetailSheetProps {
@@ -20,18 +21,6 @@ interface InvoiceDetailSheetProps {
   onRefresh: () => void;
 }
 
-const statusColor: Record<string, string> = {
-  OPEN: "bg-info text-white",
-  CLOSED: "bg-warning text-white",
-  PAID: "bg-success text-white",
-};
-
-const statusLabel: Record<string, string> = {
-  OPEN: "Aberta",
-  CLOSED: "Fechada",
-  PAID: "Paga",
-};
-
 export function InvoiceDetailSheet({ invoice, open, onClose, onRefresh }: InvoiceDetailSheetProps) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(false);
@@ -39,11 +28,13 @@ export function InvoiceDetailSheet({ invoice, open, onClose, onRefresh }: Invoic
 
   useEffect(() => {
     if (!open || !invoice) return;
+    const controller = new AbortController();
     setLoading(true);
     const competenceMonth = invoice.periodEnd.slice(0, 7) + "-01";
     getExpensesByInvoice(invoice.cardId, competenceMonth)
-      .then(setExpenses)
-      .finally(() => setLoading(false));
+      .then((data) => { if (!controller.signal.aborted) setExpenses(data); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, [open, invoice]);
 
   async function handleTogglePaid() {
@@ -70,8 +61,8 @@ export function InvoiceDetailSheet({ invoice, open, onClose, onRefresh }: Invoic
             <DialogHeader className="pb-4 border-b border-gray-100">
               <div className="flex items-center justify-between pr-6">
                 <DialogTitle className="text-sm font-500">{invoice.cardName}</DialogTitle>
-                <span className={cn("text-xs font-500 px-2 py-1 rounded-full", statusColor[invoice.status])}>
-                  {statusLabel[invoice.status]}
+                <span className={cn("text-xs font-500 px-2 py-1 rounded-full", INVOICE_STATUS_COLOR[invoice.status] ?? "bg-gray-200 text-gray-700")}>
+                  {INVOICE_STATUS[invoice.status as keyof typeof INVOICE_STATUS] ?? invoice.status}
                 </span>
               </div>
               <p className="text-xs text-gray-500">

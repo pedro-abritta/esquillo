@@ -1,35 +1,76 @@
-# Phase 3 — Section 3.4: Dashboard com dados reais ✅
+# Phase 4 — Section 4.1: Schema + TypeScript types ✅
+
+Todos os itens concluídos. Schema validado, RLS confirmado, build limpo.
+
+---
+
+# Phase 4 — Section 4.2: Tela /recorrentes (CRUD de templates)
+
+Tela completa para gerenciar templates de despesa recorrente e templates de renda recorrente. Nenhuma lógica de confirmação mensal aqui — isso é Section 4.3.
+
+---
 
 ## Checklist de Execução
 
-### A. KPI 1 — remover hardcoded
-- [x] **`app/(app)/page.tsx`** — KPI "Saldo do mês" (hardcoded `5000`) substituído por "Faturas abertas" (`totalCardUsage`)
+### A. Rota — `app/(app)/recorrentes/page.tsx`
 
-### B. Gráfico — despesas por semana com dados reais
-- [x] **`app/(app)/page.tsx`** — `chartData` estático removido; `weeklyData` calculado de `expenses` em 4 buckets por dia da compra
+- [ ] Criar arquivo `app/(app)/recorrentes/page.tsx` com `"use client"`
+- [ ] Carregar templates via `getRecurringTemplates()` no `useEffect`
+- [ ] Estado: `templates`, `loading`, `error`, `dialogOpen`, `editingTemplate`, `activeTab: "expense" | "income"`
+- [ ] Duas abas: **"Despesas"** e **"Renda"** — filtra `templates` por `type` para cada aba
+- [ ] Botão "Novo template" em cada aba — abre dialog já com `defaultType` correto
+- [ ] `RecurringTemplateItem` para cada template da aba ativa
+- [ ] Empty state por aba ("Nenhum template cadastrado.")
+- [ ] Error state com mensagem
 
-### C. Verificação
-- [x] `npm run build --no-lint` passa sem erros
+### B. Componente — `components/feature/RecurringTemplateItem.tsx`
+
+- [ ] Props: `template: RecurringTemplate`, `onEdit?: () => void`, `onDelete: () => void`, `onToggle: () => void`
+- [ ] Exibe: description, label da categoria (`EXPENSE_CATEGORIES` ou `INCOME_CATEGORIES` conforme `type`), `formatCurrency(amount)`, "Todo dia {dayOfMonth}"
+- [ ] Toggle active/inactive: chama `toggleRecurringTemplate(id, !active)` → `onToggle()`
+- [ ] Botões edit/delete on-hover (padrão `group-hover:opacity-100`)
+- [ ] `AlertDialog` de confirmação no delete → `deleteRecurringTemplate(id)` → `onDelete()`
+- [ ] Visual: template inativo com `opacity-50` no texto
+
+### C. Componente — `components/feature/RecurringTemplateDialog.tsx`
+
+- [ ] Props: `open`, `onOpenChange`, `template?: RecurringTemplate`, `defaultType: RecurringType`, `cards: CreditCard[]`, `onSuccess: () => void`
+- [ ] Campo `type` fixo (não editável após criação) — herdado de `defaultType` ou `template.type`
+- [ ] **Campos comuns:** description (text), amount (number), dayOfMonth (1–31, number input)
+- [ ] **Campo category:** dropdown — `EXPENSE_CATEGORIES` se `type === "expense"`, `INCOME_CATEGORIES` se `type === "income"`
+- [ ] **Campos expense-only** (só renderiza se `type === "expense"`):
+  - paymentMethod (select: PIX, DÉBITO, CRÉDITO, BOLETO)
+  - cardId (select de `cards`, só visível se paymentMethod === "CREDITO")
+  - isDeductible (checkbox)
+- [ ] Validação: description não-vazio, amount > 0, dayOfMonth 1–31, category selecionada
+- [ ] Validação extra: se expense + CREDITO, cardId obrigatório
+- [ ] Chama `createRecurringTemplate` ou `updateRecurringTemplate` conforme `template` presente
+- [ ] Exibe erro inline em caso de falha
+
+### D. Sidebar — adicionar link "Recorrentes"
+
+- [ ] Abrir `components/shared/Sidebar.tsx` (ou equivalente) e adicionar item entre Cartões e Investimentos
+- [ ] Label: `"Recorrentes"`, rota: `/recorrentes`, ícone: `RefreshCw` (lucide-react)
+
+### E. Verificação
+
+- [ ] `npm run dev` — navegar até `/recorrentes`
+- [ ] Criar template de despesa (com cartão), editar, desativar, deletar
+- [ ] Criar template de renda, editar, deletar
+- [ ] Confirmar que troca de aba mantém estado correto
+- [ ] `npm run build --no-lint` passa
 
 ---
 
-## Review — Phase 3 completa ✅
+## Decisões de design
 
-### Seções entregues
-
-| Section | Entregável principal |
+| Decisão | Motivo |
 |---|---|
-| 3.1 | Algoritmo de ciclo de fatura (`invoice-cycle.ts`), `competence_month` no banco, `getInvoices` derivado |
-| 3.2 | `credit_cards.used` removido (campo derivado); drill-down de fatura via Dialog com `getExpensesByInvoice` |
-| 3.3 | Projeção de 3 faturas futuras por cartão ACTIVE; tabela `invoice_payments` + toggle PAID/desfazer |
-| 3.4 | Dashboard 100% dados reais: KPI "Faturas abertas" + gráfico semanal calculado de `expenses` |
-
-### Decisões de arquitetura consolidadas
-- `date` = data da compra (imutável); `competence_month` = mês de impacto no fluxo (calculado no client, persistido)
-- Campos derivados (`used`, status de invoice) nunca no banco — calculados em runtime
-- Projeção de faturas: client-side via `getUpcomingPeriods`, sem coluna extra no banco
-- PAID é o único estado novo que exige persistência → tabela dedicada `invoice_payments`
+| Duas abas em vez de lista única com filtro | Separação clara entre despesa e renda; evita confusão de categoria cross-type |
+| `type` imutável no dialog de edição | Mudar o tipo quebraria a semântica dos campos opcionais (ex: template de renda sem paymentMethod tornando-se despesa) |
+| `cards` passados como prop ao Dialog | Página já os carrega para o seletor de cartão; evita segundo fetch dentro do componente |
+| Template inativo com `opacity-50` | Padrão visual simples; toggle é o CTA principal, não delete |
 
 ---
 
-**Next:** Phase 4 — Recurring templates + monthly confirmation flow.
+**Próxima seção após aprovação:** 4.3 — Lançamento manual de renda + tela de confirmação mensal.
