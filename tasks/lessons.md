@@ -78,3 +78,13 @@
 - **Pattern:** URL colada pelo usuário continha `/rest/v1/` no final (`https://xxx.supabase.co/rest/v1/`). O `@supabase/ssr` espera apenas a URL base e quebra silenciosamente com o suffix.
 - **Rule:** `NEXT_PUBLIC_SUPABASE_URL` deve ser sempre a URL base pura: `https://xxx.supabase.co`. Validar o formato antes de prosseguir com qualquer setup de client.
 - **Surfaced:** Phase 2 — setup do `.env.local`.
+
+### Campos condicionais por `type` devem ser nullable no schema
+- **Pattern:** `payment_method` foi criado `NOT NULL` em `recurring_templates`. Templates de renda não têm método de pagamento — o campo é irrelevante para esse type. O INSERT falhou por constraint violation, exigindo `ALTER TABLE ... DROP NOT NULL` em produção.
+- **Rule:** Quando uma coluna só faz sentido para um subconjunto de linhas (ex: expense vs income), declará-la `NULL`able no schema. A obrigatoriedade condicional fica na validação da aplicação (`if type === "expense" && !paymentMethod → erro`), não no banco — o banco não tem como avaliar lógica cross-field sem CHECK constraints complexas.
+- **Surfaced:** Phase 4.2 — primeiro teste de criação de template de renda.
+
+### Categorias de tipos diferentes não devem compartilhar FK para a mesma tabela de lookup
+- **Pattern:** `recurring_templates.category` tinha FK para uma tabela de categorias de despesa. Templates de renda usam categorias distintas (SALARIO, FREELANCE, etc.) — o INSERT violava a FK constraint ao tentar inserir um valor de `INCOME_CATEGORIES` não existente na tabela de lookup.
+- **Rule:** Quando dois subtipos de uma entidade usam conjuntos de valores diferentes para o mesmo campo (ex: ExpenseCategory vs IncomeCategory), não usar FK compartilhada. Preferir texto livre com validação no client (enum TypeScript + select filtrado por type). FK só vale quando o conjunto de valores é verdadeiramente compartilhado. Alternativa tipada: duas colunas nullable (`expense_category`, `income_category`) com CHECK `(type = 'expense' AND expense_category IS NOT NULL) OR (type = 'income' AND income_category IS NOT NULL)`.
+- **Surfaced:** Phase 4.2 — primeiro teste de criação de template de renda.
